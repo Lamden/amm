@@ -128,6 +128,10 @@ contract TokenClearing is Ownable {
         require(recoveredAddress != address(0) && recoveredAddress == owner, 'Invalid Signature!');
 
         balances[token][msg.sender] -= amount;
+
+        IERC20 tokenERC = IERC20(token);
+
+        tokenERC.transfer(msg.sender, amount);
     }
 
     // Admin functions for adding and removing tokens from the wrapped token system

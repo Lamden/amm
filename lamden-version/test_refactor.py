@@ -29,6 +29,8 @@ def dex():
     lp_points = Hash(default_value=0)
     reserves = Hash(default_value=[0, 0])
 
+    FEE_PERCENTAGE = 0.3 / 100
+
     @export
     def create_market(contract: str, currency_amount: float=0, token_amount: float=0):
         assert pairs[contract] is None, 'Market already exists!'
@@ -146,6 +148,7 @@ def dex():
 
         lp_points[contract, to] += amount
 
+    # Buy takes fee from the crypto being transferred in
     @export
     def buy(contract: str, currency_amount: float):
         assert pairs[contract] is not None, 'Market does not exist!'
@@ -163,6 +166,11 @@ def dex():
 
         tokens_purchased = token_reserve - new_token_reserve
 
+        fee = tokens_purchased * FEE_PERCENTAGE
+
+        tokens_purchased -= fee
+        new_token_reserve += fee
+
         assert tokens_purchased > 0, 'Token reserve error!'
 
         currency.transfer_from(amount=currency_amount, to=ctx.this, main_account=ctx.caller)
@@ -171,6 +179,7 @@ def dex():
         reserves[contract] = [new_currency_reserve, new_token_reserve]
         prices[contract] = new_currency_reserve / new_token_reserve
 
+    # Sell takes fee from crypto being transferred out
     @export
     def sell(contract: str, token_amount: float):
         assert pairs[contract] is not None, 'Market does not exist!'
@@ -187,7 +196,12 @@ def dex():
 
         new_currency_reserve = k / new_token_reserve
 
-        currency_purchased = currency_reserve - new_currency_reserve
+        currency_purchased = currency_reserve - new_currency_reserve # MINUS FEE
+
+        fee = currency_purchased * FEE_PERCENTAGE
+
+        currency_purchased -= fee
+        new_currency_reserve += fee
 
         assert currency_purchased > 0, 'Token reserve error!'
 
@@ -511,7 +525,14 @@ class MyTestCase(TestCase):
 
         self.dex.buy(contract='con_token1', currency_amount=10, signer='stu')
 
-        self.assertEquals(self.dex.prices['con_token1'], 0.121)
+        # Price is impacted by the fee based on how much of the currency or token is sent in the buy / sell
+        expected_price = 0.121
+        amount = 10
+        fee = 0.3 / 100
+
+        actual_price = expected_price / (1 + (fee / amount))
+
+        self.assertAlmostEqual(self.dex.prices['con_token1'], actual_price)
 
     def test_buy_sell_updates_price_to_original(self):
         self.currency.transfer(amount=110, to='stu')
@@ -537,7 +558,9 @@ class MyTestCase(TestCase):
 
         self.dex.sell(contract='con_token1', token_amount=90.909090909090 - fee, signer='stu')
 
-        self.assertAlmostEqual(self.dex.prices['con_token1'], 0.1 * 1.0003)
+        price_impact = 0.3 / (100 * 10)
+
+        self.assertAlmostEqual(self.dex.prices['con_token1'], 0.1 * (1 + price_impact * 2))
 
     def test_buy_updates_reserves(self):
         self.currency.transfer(amount=110, to='stu')
@@ -552,7 +575,12 @@ class MyTestCase(TestCase):
 
         self.dex.buy(contract='con_token1', currency_amount=10, signer='stu')
 
-        self.assertEquals(self.dex.reserves['con_token1'], [110, 909.090909090909091])
+        fee = (1000 - 909.090909090909091) * (0.3 / 100)
+
+        cur_res, tok_res = self.dex.reserves['con_token1']
+
+        self.assertEqual(cur_res, 110)
+        self.assertAlmostEqual(tok_res, 909.090909090909091 + fee)
 
     def test_sell_transfers_correct_amount_of_tokens(self):
         self.currency.transfer(amount=100, to='stu')
@@ -586,7 +614,16 @@ class MyTestCase(TestCase):
 
         self.dex.sell(contract='con_token1', token_amount=10, signer='stu')
 
-        self.assertAlmostEqual(self.dex.prices['con_token1'], 0.098029604940692)
+        print(0.098029604940692 / self.dex.prices['con_token1'])
+
+        # Because of fees, the amount left in the reserves differs
+        expected_price = 0.098029604940692
+        amount = 100
+        fee = 0.3 / 100
+
+        actual_price = expected_price / (1 - (fee / amount))
+
+        self.assertAlmostEqual(self.dex.prices['con_token1'], actual_price)
 
     def test_sell_updates_reserves(self):
         self.currency.transfer(amount=100, to='stu')
@@ -601,7 +638,12 @@ class MyTestCase(TestCase):
 
         self.dex.sell(contract='con_token1', token_amount=10, signer='stu')
 
-        self.assertEquals(self.dex.reserves['con_token1'], [99.00990099009901, 1010])
+        fee = (100 - 99.00990099009901) * (0.3 / 100)
+
+        cur_res, tok_res = self.dex.reserves['con_token1']
+
+        self.assertAlmostEqual(cur_res, 99.00990099009901 + fee)
+        self.assertEqual(tok_res, 1010)
 
     def test_sell_fails_if_no_market(self):
         with self.assertRaises(AssertionError):

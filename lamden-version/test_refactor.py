@@ -812,7 +812,7 @@ class MyTestCase(TestCase):
 
         self.assertEqual(self.dex.reserves['con_token1'], [150, 1500])
 
-    def test_remove_liquidity_collects_fees(self):
+    def test_remove_liquidity_after_buy_collects_token_fees(self):
         self.currency.transfer(amount=110, to='stu')
         self.token1.transfer(amount=1000, to='stu')
 
@@ -824,6 +824,40 @@ class MyTestCase(TestCase):
         self.assertEquals(self.dex.prices['con_token1'], 0.1)
 
         self.dex.buy(contract='con_token1', currency_amount=10, signer='stu')
+
+        purchased_tokens = self.token1.balances['stu']
+
+        # Removing 25% of the liquidity returns 25% of the fees collected
+
+        cur_reserves, token_reserves = self.dex.reserves['con_token1']
+
+        self.dex.remove_liquidity(contract='con_token1', amount=25, signer='stu')
+
+        self.assertEquals(self.currency.balances['stu'], 110 * 0.25)
+        self.assertEquals(self.token1.balances['stu'], (token_reserves * 0.25) + purchased_tokens)
+
+    def test_remove_liquidity_after_sell_collects_currency_fees(self):
+        self.currency.transfer(amount=100, to='stu')
+        self.token1.transfer(amount=1100, to='stu')
+
+        self.currency.approve(amount=100, to='dex', signer='stu')
+        self.token1.approve(amount=1100, to='dex', signer='stu')
+
+        self.dex.create_market(contract='con_token1', currency_amount=100, token_amount=1000, signer='stu')
+
+        self.assertEquals(self.dex.prices['con_token1'], 0.1)
+
+        self.dex.sell(contract='con_token1', token_amount=100, signer='stu')
+
+        purchased_currency = self.currency.balances['stu']
+
+        # Removing 25% of the liquidity returns 25% of the fees collected
+        cur_reserves, token_reserves = self.dex.reserves['con_token1']
+
+        self.dex.remove_liquidity(contract='con_token1', amount=25, signer='stu')
+
+        self.assertEquals(self.currency.balances['stu'], (cur_reserves * 0.25) + purchased_currency)
+        self.assertEquals(self.token1.balances['stu'], 1100 * 0.25)
 
     def test_remove_liquidity_collects_fees_proportionally(self):
         pass

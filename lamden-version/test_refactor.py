@@ -859,5 +859,58 @@ class MyTestCase(TestCase):
         self.assertEquals(self.currency.balances['stu'], (cur_reserves * 0.25) + purchased_currency)
         self.assertEquals(self.token1.balances['stu'], 1100 * 0.25)
 
-    def test_remove_liquidity_collects_fees_proportionally(self):
-        pass
+    def test_remove_liquidity_collects_fees_proportionally_after_buy(self):
+        # SYS opens the market, has 100 LP points
+        self.currency.approve(amount=10000, to='dex')
+        self.token1.approve(amount=10000, to='dex')
+
+        self.dex.create_market(contract='con_token1', currency_amount=75, token_amount=750)
+
+        # STU adds liquidity, as 25% of total LP points
+        self.currency.transfer(amount=5000, to='stu')
+        self.token1.transfer(amount=5000, to='stu')
+
+        self.currency.approve(amount=5000, to='dex', signer='stu')
+        self.token1.approve(amount=5000, to='dex', signer='stu')
+
+        self.dex.add_liquidity(contract='con_token1', currency_amount=25, signer='stu')
+
+        self.assertAlmostEqual(float(self.dex.lp_points['con_token1', 'stu'] / self.dex.lp_points['con_token1']), 0.25)
+
+        self.dex.buy(contract='con_token1', currency_amount=10, signer='stu')
+
+        purchased_tokens = self.token1.balances['stu']
+
+        cur_reserves, token_reserves = self.dex.reserves['con_token1']
+
+        self.dex.remove_liquidity(contract='con_token1', amount=33.33333333333331, signer='stu')
+
+        self.assertAlmostEqual(self.token1.balances['stu'], (float(token_reserves) * 0.25) + purchased_tokens)
+
+    def test_remove_liquidity_collects_fees_proportionally_after_sell(self):
+        # SYS opens the market, has 100 LP points
+        self.currency.approve(amount=10000, to='dex')
+        self.token1.approve(amount=10000, to='dex')
+
+        self.dex.create_market(contract='con_token1', currency_amount=75, token_amount=750)
+
+        # STU adds liquidity, as 25% of total LP points
+        self.currency.transfer(amount=5000, to='stu')
+        self.token1.transfer(amount=5000, to='stu')
+
+        self.currency.approve(amount=5000, to='dex', signer='stu')
+        self.token1.approve(amount=5000, to='dex', signer='stu')
+
+        self.dex.add_liquidity(contract='con_token1', currency_amount=25, signer='stu')
+
+        self.assertAlmostEqual(float(self.dex.lp_points['con_token1', 'stu'] / self.dex.lp_points['con_token1']), 0.25)
+
+        self.dex.sell(contract='con_token1', token_amount=100, signer='stu')
+
+        purchased_currency = self.currency.balances['stu']
+
+        cur_reserves, token_reserves = self.dex.reserves['con_token1']
+
+        self.dex.remove_liquidity(contract='con_token1', amount=33.33333333333331, signer='stu')
+
+        self.assertAlmostEqual(self.currency.balances['stu'], (float(cur_reserves) * 0.25) + purchased_currency)

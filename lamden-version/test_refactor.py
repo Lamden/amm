@@ -171,7 +171,7 @@ def dex():
         tokens_purchased -= fee
         new_token_reserve += fee
 
-        if minimum_received != 0:
+        if minimum_received != None:
             assert tokens_purchased >= minimum_received, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_received)
             
         assert tokens_purchased > 0, 'Token reserve error!'
@@ -206,7 +206,7 @@ def dex():
         currency_purchased -= fee
         new_currency_reserve += fee
 
-        if minimum_received != 0:
+        if minimum_received != None:
             assert currency_purchased >= minimum_received, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_received)
             
         assert currency_purchased > 0, 'Token reserve error!'
@@ -521,7 +521,7 @@ class MyTestCase(TestCase):
 
         fee = 90.909090909090 * (0.3 / 100)
         
-        self.dex.buy(contract='con_token1', currency_amount=10, minimum_received=91-fee, signer='stu') #To avoid inaccurate floating point calculations failing the test
+        self.dex.buy(contract='con_token1', currency_amount=10, minimum_received=90-fee, signer='stu') #To avoid inaccurate floating point calculations failing the test
 
         self.assertEquals(self.currency.balance_of(account='stu'), 0)
         self.assertAlmostEqual(self.token1.balance_of(account='stu'), 90.909090909090909 - fee)

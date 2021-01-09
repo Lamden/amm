@@ -150,7 +150,7 @@ def dex():
 
     # Buy takes fee from the crypto being transferred in
     @export
-    def buy(contract: str, currency_amount: float, minimum_recieved: float=0):
+    def buy(contract: str, currency_amount: float, minimum_received: float=0):
         assert pairs[contract] is not None, 'Market does not exist!'
         assert currency_amount > 0, 'Must provide currency amount!'
 
@@ -171,8 +171,8 @@ def dex():
         tokens_purchased -= fee
         new_token_reserve += fee
 
-        if minimum_recieved != 0:
-            assert tokens_purchased >= minimum_recieved, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_recieved)
+        if minimum_received != 0:
+            assert tokens_purchased >= minimum_received, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_recieved)
             
         assert tokens_purchased > 0, 'Token reserve error!'
 
@@ -184,7 +184,7 @@ def dex():
 
     # Sell takes fee from crypto being transferred out
     @export
-    def sell(contract: str, token_amount: float, minimum_recieved: float=0):
+    def sell(contract: str, token_amount: float, minimum_received: float=0):
         assert pairs[contract] is not None, 'Market does not exist!'
         assert token_amount > 0, 'Must provide currency amount and token amount!'
 
@@ -206,8 +206,8 @@ def dex():
         currency_purchased -= fee
         new_currency_reserve += fee
 
-        if minimum_recieved != 0:
-            assert currency_purchased >= minimum_recieved, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_recieved)
+        if minimum_received != 0:
+            assert currency_purchased >= minimum_received, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_recieved)
             
         assert currency_purchased > 0, 'Token reserve error!'
 
@@ -521,12 +521,12 @@ class MyTestCase(TestCase):
 
         fee = 90.909090909090 * (0.3 / 100)
         
-        self.dex.buy(contract='con_token1', currency_amount=10, minimum_recieved=91-fee, signer='stu') #To avoid inaccurate floating point calculations failing the test
+        self.dex.buy(contract='con_token1', currency_amount=10, minimum_received=91-fee, signer='stu') #To avoid inaccurate floating point calculations failing the test
 
         self.assertEquals(self.currency.balance_of(account='stu'), 0)
         self.assertAlmostEqual(self.token1.balance_of(account='stu'), 90.909090909090909 - fee)
     
-    def test_buy_below_minimum_recieved_fails(self):
+    def test_buy_below_minimum_received_fails(self):
         self.currency.transfer(amount=110, to='stu')
         self.token1.transfer(amount=1000, to='stu')
 
@@ -541,7 +541,7 @@ class MyTestCase(TestCase):
         fee = 90.909090909090 * (0.3 / 100)
         
         with self.assertRaises(AssertionError):
-            self.dex.buy(contract='con_token1', currency_amount=10, minimum_recieved=100, signer='stu')
+            self.dex.buy(contract='con_token1', currency_amount=10, minimum_received=100, signer='stu')
             
     def test_buy_updates_price(self):
         self.currency.transfer(amount=110, to='stu')

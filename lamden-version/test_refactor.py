@@ -172,7 +172,7 @@ def dex():
         new_token_reserve += fee
 
         if minimum_received != 0:
-            assert tokens_purchased >= minimum_received, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_recieved)
+            assert tokens_purchased >= minimum_received, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_received)
             
         assert tokens_purchased > 0, 'Token reserve error!'
 
@@ -207,7 +207,7 @@ def dex():
         new_currency_reserve += fee
 
         if minimum_received != 0:
-            assert currency_purchased >= minimum_received, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_recieved)
+            assert currency_purchased >= minimum_received, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_received)
             
         assert currency_purchased > 0, 'Token reserve error!'
 

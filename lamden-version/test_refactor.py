@@ -150,7 +150,7 @@ def dex():
 
     # Buy takes fee from the crypto being transferred in
     @export
-    def buy(contract: str, currency_amount: float):
+    def buy(contract: str, currency_amount: float, minimum_recieved: float):
         assert pairs[contract] is not None, 'Market does not exist!'
         assert currency_amount > 0, 'Must provide currency amount!'
 
@@ -165,12 +165,15 @@ def dex():
         new_token_reserve = k / new_currency_reserve
 
         tokens_purchased = token_reserve - new_token_reserve
-
+        
         fee = tokens_purchased * FEE_PERCENTAGE
 
         tokens_purchased -= fee
         new_token_reserve += fee
 
+        if minimum_recieved != 0:
+            assert tokens_purchased >= minimum_recieved, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_recieved)
+            
         assert tokens_purchased > 0, 'Token reserve error!'
 
         currency.transfer_from(amount=currency_amount, to=ctx.this, main_account=ctx.caller)
@@ -181,7 +184,7 @@ def dex():
 
     # Sell takes fee from crypto being transferred out
     @export
-    def sell(contract: str, token_amount: float):
+    def sell(contract: str, token_amount: float, minimum_recieved: float):
         assert pairs[contract] is not None, 'Market does not exist!'
         assert token_amount > 0, 'Must provide currency amount and token amount!'
 
@@ -203,6 +206,9 @@ def dex():
         currency_purchased -= fee
         new_currency_reserve += fee
 
+        if minimum_recieved != 0:
+            assert currency_purchased >= minimum_recieved, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_recieved)
+            
         assert currency_purchased > 0, 'Token reserve error!'
 
         token.transfer_from(amount=token_amount, to=ctx.this, main_account=ctx.caller)

@@ -148,7 +148,7 @@ def dex():
 
         lp_points[contract, to] += amount
 
-    # Buy takes fee from the crypto being transferred in
+    # Buy takes fee from currency
     @export
     def buy(contract: str, currency_amount: float, minimum_received: float=0):
         assert pairs[contract] is not None, 'Market does not exist!'
@@ -158,20 +158,19 @@ def dex():
 
         assert I.enforce_interface(token, token_interface), 'Invalid token interface!'
 
+        fee = currency_amount * FEE_PERCENTAGE
+        currency_amount -= fee
+        
         currency_reserve, token_reserve = reserves[contract]
         k = currency_reserve * token_reserve
 
-        new_currency_reserve = currency_reserve + currency_amount
+        new_currency_reserve = currency_reserve + currency_amount 
         new_token_reserve = k / new_currency_reserve
-
-        tokens_purchased = token_reserve - new_token_reserve
+        new_currency_reserve += fee
         
-        fee = tokens_purchased * FEE_PERCENTAGE
+        tokens_purchased = token_reserve - new_token_reserve
 
-        tokens_purchased -= fee
-        new_token_reserve += fee
-
-        if minimum_received != None:
+        if minimum_received is not None:
             assert tokens_purchased >= minimum_received, "Only {} tokens can be purchased, which is less than your minimum, which is {} tokens.".format(tokens_purchased, minimum_received)
             
         assert tokens_purchased > 0, 'Token reserve error!'
@@ -182,7 +181,7 @@ def dex():
         reserves[contract] = [new_currency_reserve, new_token_reserve]
         prices[contract] = new_currency_reserve / new_token_reserve
 
-    # Sell takes fee from crypto being transferred out
+    # Sell takes fee from the token
     @export
     def sell(contract: str, token_amount: float, minimum_received: float=0):
         assert pairs[contract] is not None, 'Market does not exist!'
@@ -192,21 +191,19 @@ def dex():
 
         assert I.enforce_interface(token, token_interface), 'Invalid token interface!'
 
+        fee = token_amount * FEE_PERCENTAGE
+        token_amount -= fee
+        
         currency_reserve, token_reserve = reserves[contract]
         k = currency_reserve * token_reserve
 
         new_token_reserve = token_reserve + token_amount
-
         new_currency_reserve = k / new_token_reserve
+        new_token_reserve += fee
 
-        currency_purchased = currency_reserve - new_currency_reserve # MINUS FEE
+        currency_purchased = currency_reserve - new_currency_reserve
 
-        fee = currency_purchased * FEE_PERCENTAGE
-
-        currency_purchased -= fee
-        new_currency_reserve += fee
-
-        if minimum_received != None:
+        if minimum_received is not None:
             assert currency_purchased >= minimum_received, "Only {} TAU can be purchased, which is less than your minimum, which is {} TAU.".format(currency_purchased, minimum_received)
             
         assert currency_purchased > 0, 'Token reserve error!'

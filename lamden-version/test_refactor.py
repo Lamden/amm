@@ -505,7 +505,7 @@ class MyTestCase(TestCase):
 
         self.dex.create_market(contract='con_token1', currency_amount=100, token_amount=100)
 
-        self.dex.buy(contract='con_token1', currency_amount=1, minimum_recieved=0.5)
+        self.dex.buy(contract='con_token1', currency_amount=1, minimum_received=0.5)
         
     def test_buy_transfers_correct_amount_of_tokens(self):
         self.currency.transfer(amount=110, to='stu')
